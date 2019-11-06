@@ -19,17 +19,17 @@ import timeit
 OU = OU()       #Ornstein-Uhlenbeck Process
 
 def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
-    BUFFER_SIZE = 100000
-    BATCH_SIZE = 32
-    GAMMA = 0.99
-    TAU = 0.001     #Target Network HyperParameters
-    LRA = 0.0001    #Learning rate for Actor
-    LRC = 0.001     #Lerning rate for Critic
+    BUFFER_SIZE = 100000  # 緩存大小，網絡儲存能力
+    BATCH_SIZE = 32       # 批尺寸，單次處理樣本的數量
+    GAMMA = 0.99          # 折扣係數
+    TAU = 0.001     #Target Network HyperParameters 目標網絡超參數
+    LRA = 0.0001    #Learning rate for Actor Actor網絡學習率
+    LRC = 0.001     #Lerning rate for Critic 學習率
 
     action_dim = 3  #Steering/Acceleration/Brake
-    state_dim = 29  #of sensors input
+    state_dim = 29  #of sensors input 傳感器出入數量
 
-    np.random.seed(1337)
+    np.random.seed(1337)   #随机数种子，如果使用相同的数字，则每次产生的随机数相同
 
     vision = False
 
@@ -105,7 +105,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
         
             buff.add(s_t, a_t[0], r_t, s_t1, done)      #Add replay buffer
-            
+            # 从存储回放器中随机小批量抽取N个变换阶段 (si, ai, ri, si+1)
             #Do the batch update
             batch = buff.getBatch(BATCH_SIZE)
             states = np.asarray([e[0] for e in batch])
