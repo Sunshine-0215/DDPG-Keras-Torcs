@@ -12,8 +12,8 @@ import time
 
 class TorcsEnv:
     terminal_judge_start = 100  # If after 100 timestep still no progress, terminated
-    termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
-    default_speed = 50
+    termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit 最低限制速度
+    default_speed = 50 # 默認速度
 
     initial_reset = True
 
@@ -72,7 +72,7 @@ class TorcsEnv:
         # Steering
         action_torcs['steer'] = this_action['steer']  # in [-1, 1]
 
-        #  Simple Autnmatic Throttle Control by Snakeoil
+        #  Simple Autnmatic Throttle Control by Snakeoil  # 自動換擋器
         if self.throttle is False:
             target_speed = self.default_speed
             if client.S.d['speedX'] < target_speed - (client.R.d['steer']*50):
@@ -94,7 +94,7 @@ class TorcsEnv:
             action_torcs['accel'] = this_action['accel']
             action_torcs['brake'] = this_action['brake']
 
-        #  Automatic Gear Change by Snakeoil
+        #  Automatic Gear Change by Snakeoil 通過Snakeoil自動換擋
         if self.gear_change is True:
             action_torcs['gear'] = this_action['gear']
         else:
@@ -115,18 +115,20 @@ class TorcsEnv:
         obs_pre = copy.deepcopy(client.S.d)
 
         # One-Step Dynamics Update #################################
-        # Apply the Agent's action into torcs
+        # Apply the Agent's action into torcs 傳遞動作
         client.respond_to_server()
-        # Get the response of TORCS
+        # Get the response of TORCS 獲取回覆
         client.get_servers_input()
 
-        # Get the current full-observation from torcs
+        # Get the current full-observation from torcs 從服務器獲取全部觀察
         obs = client.S.d
 
         # Make an obsevation from a raw observation vector from TORCS
+        # 從原始觀測向量獲取觀察
         self.observation = self.make_observaton(obs)
 
         # Reward setting Here #######################################
+        # 獎勵函數設置
         # direction-dependent positive reward
         track = np.array(obs['track'])
         trackPos = np.array(obs['trackPos'])
@@ -134,32 +136,34 @@ class TorcsEnv:
         damage = np.array(obs['damage'])
         rpm = np.array(obs['rpm'])
 
+        # 對車輛目前速度、距離中心線位置的獎賞
         progress = sp*np.cos(obs['angle']) - np.abs(sp*np.sin(obs['angle'])) - sp * np.abs(obs['trackPos'])
         reward = progress
 
-        # collision detection
+        # collision detection 碰撞情況下的懲罰
         if obs['damage'] - obs_pre['damage'] > 0:
             reward = -1
 
-        # Termination judgement #########################
+        # Termination judgement #########################終止條件
         episode_terminate = False
-        #if (abs(track.any()) > 1 or abs(trackPos) > 1):  # Episode is terminated if the car is out of track
+        # if (abs(track.any()) > 1 or abs(trackPos) > 1):  # Episode is terminated if the car is out of track 汽車衝出賽道就終止
         #    reward = -200
         #    episode_terminate = True
         #    client.R.d['meta'] = True
 
-        #if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
+        # if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
+        # 100步後速度還是小於5，即沒有進展，就終止過程
         #    if progress < self.termination_limit_progress:
         #        print("No progress")
         #        episode_terminate = True
         #        client.R.d['meta'] = True
 
-        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
+        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward 汽車向後走就停止
             episode_terminate = True
             client.R.d['meta'] = True
 
 
-        if client.R.d['meta'] is True: # Send a reset signal
+        if client.R.d['meta'] is True: # Send a reset signal send重置信號
             self.initial_run = False
             client.respond_to_server()
 
@@ -168,7 +172,7 @@ class TorcsEnv:
         return self.get_obs(), reward, client.R.d['meta'], {}
 
     def reset(self, relaunch=False):
-        #print("Reset")
+        # print("Reset")
 
         self.time_step = 0
 
